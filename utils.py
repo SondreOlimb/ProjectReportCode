@@ -50,24 +50,10 @@ def fft_and_plot(data, axis, fs=1,fft_size=256,plot=False,shift =False,dB=True, 
     #data_fft = cv2.GaussianBlur(np.real(data_fft) +1j*np.imag(data_fft), (3, 3),sigmaX=mode,sigmaY=mode)
     if shift:
         data_fft = np.fft.fftshift(data_fft, axes=axis)
-    if(dB):
-        #data_fft_plot = np.abs(data_fft)
-        data_fft_plot = 20*np.log10(np.abs(data_fft))
-        #data_fft_plot = np.delete(data_fft_plot,0,axis=1)
-        # data_fft_plot = np.delete(data_fft_plot,0,axis=0)
-        # data_fft_plot = np.delete(data_fft_plot,0,axis=0)
-        # data_fft_plot = np.delete(data_fft_plot,0,axis=0)
-        # data_fft_plot = np.delete(data_fft_plot,0,axis=0)
-        # data_fft_plot = np.delete(data_fft_plot,0,axis=0)
-        # data_fft_plot = np.delete(data_fft_plot,0,axis=0)
-        # data_fft_plot = np.delete(data_fft_plot,0,axis=0)
-        # data_fft_plot = np.delete(data_fft_plot,0,axis=0)
-
-    else:
-        data_fft_plot = np.abs(data_fft)
+    
 
 
-        print(data_fft_plot.shape)
+       
     # else:
     #     data_fft_plot = np.abs(data_fft)
     freq = np.fft.fftfreq(fft_size, d=1/f_s)
@@ -78,12 +64,29 @@ def fft_and_plot(data, axis, fs=1,fft_size=256,plot=False,shift =False,dB=True, 
 
     if plot:
         
-       # data_fft_plot = cv2.GaussianBlur(data_fft_plot, (3, 3),sigmaX=mode,sigmaY=mode)
-        #data_fft_plot = ndimage.gaussian_filter(data_fft_plot,sigma=1,mode=mode)
-        #sns.set(rc={'figure.figsize':(20,15)})
+  
         plt.figure(figsize=(20,15))
-        rotated_img = ndimage.rotate(data_fft_plot,90) # We rotate the image so the x axis is the velocity
+        rotated_img = ndimage.rotate(data_fft,90) # We rotate the image so the x axis is the velocity
+       
+
+        rms = 10*np.log(np.sqrt(np.mean(np.abs(rotated_img[130:135,80:100])**2)))
+        peak = 10*np.log(np.abs(rotated_img[137,87]))
+        snr = peak-rms
+        print("Peak:",peak)
+        print("Side loab:", 10*np.log(np.abs(rotated_img[137,85])))
+        print("RMS:",rms)
+        print("SNR:",snr) 
+        if(dB):
+        
+      
+        
+           rotated_img = 20*np.log10(np.abs(rotated_img))
+       
+
+        else:
+            rotated_img = np.abs(rotated_img)  
         plt.imshow(rotated_img,cmap="plasma", vmin=vmin,vmax=vmax)
+        
         
         plt.yticks(np.linspace(0,256,5),labels=np.round(np.linspace(255*0.785277,0,5)),size =15)
         plt.xticks(size =15)
@@ -208,6 +211,7 @@ def CFAR_2D(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False)
     treshold_map = np.zeros(data.shape)
 
     window_size = guard_cells + training_cells
+    data = ndimage.rotate(data, 90)
     
     data_cfar = np.pad(data, window_size, mode='edge')
     
@@ -229,9 +233,9 @@ def CFAR_2D(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False)
                 idx_peaks.append([i,j])
                 detections.append({
                     "cords":(i,j),
-                    "peak":data[i,j],
-                    "noise_est":P_training,
-                    "SNR":10*np.log10(data[i,j]/P_training)
+                    "peak":np.abs(data[i,j]),
+                    "noise_est":np.abs(P_training),
+                    "SNR":10*np.log10(np.abs(data[i,j])/np.abs(P_training))
                     }
                  )
                 
@@ -241,7 +245,8 @@ def CFAR_2D(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False)
         for i in newlist:
             print(i,"\n")
         plt.figure(figsize=(20,15))
-        rotated_img = ndimage.rotate(np.abs(data),90) # We rotate the image so the x axis is the velocity
+        #rotated_img = ndimage.rotate(np.abs(data),90) # We rotate the image so the x axis is the velocity
+        rotated_img =np.abs(data)
         plt.imshow(rotated_img,cmap="plasma")
         plt.grid(False)
         if(iso_axis):
