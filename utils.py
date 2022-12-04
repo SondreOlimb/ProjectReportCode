@@ -69,11 +69,11 @@ def fft_and_plot(data, axis, fs=1,fft_size=256,plot=False,shift =False,dB=True, 
         rotated_img = ndimage.rotate(data_fft,90) # We rotate the image so the x axis is the velocity
        
 
-        rms = 10*np.log(np.sqrt(np.mean(np.abs(rotated_img[130:135,80:100])**2)))
-        peak = 10*np.log(np.abs(rotated_img[137,87]))
+        rms = 10*np.log10(np.sqrt(np.mean(np.abs(rotated_img[130:135,80:100])**2)))
+        peak = 10*np.log10(np.abs(rotated_img[137,87]))
         snr = peak-rms
         print("Peak:",peak)
-        print("Side loab:", 10*np.log(np.abs(rotated_img[137,85])))
+        print("Side loab:", 10*np.log10(np.abs(rotated_img[137,85])))
         print("RMS:",rms)
         print("SNR:",snr) 
         if(dB):
@@ -88,17 +88,18 @@ def fft_and_plot(data, axis, fs=1,fft_size=256,plot=False,shift =False,dB=True, 
         plt.imshow(rotated_img,cmap="plasma", vmin=vmin,vmax=vmax)
         
         
-        plt.yticks(np.linspace(0,256,5),labels=np.round(np.linspace(255*0.785277,0,5)),size =15)
-        plt.xticks(size =15)
+        plt.yticks(np.linspace(0,256,5),labels=np.round(np.linspace(255*0.785277,0,5)),size =20)
+        plt.xticks(size =20)
         if(doppler):
-            plt.xticks(np.linspace(0,256,11),labels=np.round(np.linspace(-0.127552440715*127,0.127552440715*127,11),2))
+            plt.xticks(np.linspace(0,256,7),labels=np.round(np.linspace(-0.127552440715*127,0.127552440715*127,7),2),size =20)
         cbar  = plt.colorbar()
         cbar.set_label('Mangnitude [dB]',fontdict = {'fontsize' : 20})
-        cbar.ax.tick_params(labelsize=15) 
+        cbar.ax.tick_params(labelsize=30) 
         plt.xlabel(labels["x_label"],fontdict = {'fontsize' : 20})
         plt.ylabel(labels["y_label"],fontdict = {'fontsize' : 20})
         plt.title(labels["title"],fontdict = {'fontsize' : 30})
         plt.grid(False)
+        plt.tight_layout()
 
 
 
@@ -160,11 +161,11 @@ def plot_3D(data,figname,zlim_min=40,zlim_max=120):
     
 
 
-def MIT_filter(data,fs=1,highcut=0.1,order=2):
+def MIT_filter(data,fs=f_s,highcut=42,order=2):
     nyq = 0.5 * fs
     
     high = highcut / nyq
-    sos = signal.butter(order, 0.05, 'hp',  output='sos')
+    sos = signal.butter(order, 42, 'hp',  output='sos',fs=fs)
     filtered = signal.sosfilt(sos, data,axis=0)
     return filtered
 
@@ -198,7 +199,7 @@ def window_estimator(x,training_cells,training_area):
     
     return P_avg(P_traning_cells,training_area)
 
-def CFAR_2D(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False):
+def CFAR_2D(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False,saveFig=False,filename =""):
     """_summary_
 
     Args:
@@ -218,6 +219,7 @@ def CFAR_2D(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False)
 
     window_area = (2*window_size+1)**2
     training_area = window_area - (2*window_size+1-2*training_cells)**2
+    print("traning area",training_area)
     a = alpha(training_area, PFA)
     detections = []
 
@@ -242,11 +244,12 @@ def CFAR_2D(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False)
     
     if(plot):
         newlist = sorted(detections, key=itemgetter("SNR"),reverse=True)
+        print("Total detections",len(newlist))
         for i in newlist:
             print(i,"\n")
         plt.figure(figsize=(20,15))
         #rotated_img = ndimage.rotate(np.abs(data),90) # We rotate the image so the x axis is the velocity
-        rotated_img =np.abs(data)
+        rotated_img =20*np.log10(np.abs(data))
         plt.imshow(rotated_img,cmap="plasma")
         plt.grid(False)
         if(iso_axis):
@@ -258,46 +261,51 @@ def CFAR_2D(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False)
         plt.xlabel(labels["x_label"],fontdict = {'fontsize' : 20})
         plt.ylabel(labels["y_label"],fontdict = {'fontsize' : 20})
         plt.title("CFAR",fontdict = {'fontsize' : 30})
+        if saveFig:
+            plt.savefig(f'plots/{filename}.svg',format="svg")
         plt.show()
 
         #3dplot
-        plt.figure(figsize=(60,60))
-        data_abs = 20*np.log(np.abs(data))
-            #data_abs = np.delete(data_abs,0,axis=1)
+        # plt.figure(figsize=(60,60))
+        # data_abs = 20*np.log10(np.abs(data))
+        #     #data_abs = np.delete(data_abs,0,axis=1)
 
-        fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+        # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
             
             
 
 
-            # Make data.
-        X = np.arange(0, 256, 1)
-        Y = np.arange(0, 256, 1)
-        X, Y = np.meshgrid(X, Y)
-        #ata_abs[data_abs<zlim_min]= np.nan
+        #     # Make data.
+        # X = np.arange(0, 256, 1)
+        # Y = np.arange(0, 256, 1)
+        # X, Y = np.meshgrid(X, Y)
+        # #ata_abs[data_abs<zlim_min]= np.nan
         
             
 
-            # Plot the surface.
-        surf = ax.plot_surface(X, Y, data_abs, cmap=cm.coolwarm,
-                                linewidth=0, antialiased=False)
-            #ax.set_zlim(zlim_min, zlim_max)
+        #     # Plot the surface.
+        # surf = ax.plot_surface(X, Y, data_abs, cmap=cm.coolwarm,
+        #                         linewidth=0, antialiased=False)
+        #     #ax.set_zlim(zlim_min, zlim_max)
             
-        ax.set_xticks(np.linspace(0,256,5),labels=np.round(np.linspace(0,255*0.785277,5)),size =10)
+        # ax.set_xticks(np.linspace(0,256,5),labels=np.round(np.linspace(0,255*0.785277,5)),size =10)
             
                 
-        ax.set_yticks(np.linspace(0,256,5),labels=np.round(np.linspace(-0.127552440715*127,0.127552440715*127,5),1),size =10)
-        ax.set_zlabel("Magnitude [dB]")
-        ax.set_ylabel("Velocity [knots]")
-        ax.set_xlabel("Range [m]")
-        #ax.set_zlim(zlim_min,zlim_max+30)
+        # ax.set_yticks(np.linspace(0,256,5),labels=np.round(np.linspace(-0.127552440715*127,0.127552440715*127,5),1),size =10)
+        # ax.set_zlabel("Magnitude [dB]")
+        # ax.set_ylabel("Velocity [knots]")
+        # ax.set_xlabel("Range [m]")
+        # #ax.set_zlim(zlim_min,zlim_max+30)
             
-        cbar = fig.colorbar(surf, ax=ax ,shrink=0.5, aspect=5)
-        cbar.set_label('Mangnitude [dB]',fontdict = {'fontsize' : 10})
-        cbar.ax.tick_params(labelsize=10) 
+        # cbar = fig.colorbar(surf, ax=ax ,shrink=0.5, aspect=5)
+        # cbar.set_label('Mangnitude [dB]',fontdict = {'fontsize' : 10})
+        # cbar.ax.tick_params(labelsize=10) 
+        # if saveFig:
+        #     plt.savefig(f'plots/{filename}_3D.svg',format="svg")
+        
 
 
-        plt.show()
+        # #plt.show()
     
     
     
