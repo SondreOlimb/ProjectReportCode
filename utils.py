@@ -65,7 +65,7 @@ def fft_and_plot(data, axis, fs=1,fft_size=256,plot=False,shift =False,dB=True, 
     if plot:
         
   
-        plt.figure(figsize=(20,15))
+        plt.figure(figsize=(10,10))
         rotated_img = ndimage.rotate(data_fft,90) # We rotate the image so the x axis is the velocity
        
 
@@ -94,12 +94,13 @@ def fft_and_plot(data, axis, fs=1,fft_size=256,plot=False,shift =False,dB=True, 
             plt.xticks(np.linspace(0,256,7),labels=np.round(np.linspace(-0.127552440715*127,0.127552440715*127,7),2),size =20)
         cbar  = plt.colorbar()
         cbar.set_label('Mangnitude [dB]',fontdict = {'fontsize' : 20})
-        cbar.ax.tick_params(labelsize=30) 
+        cbar.ax.tick_params(labelsize=15) 
         plt.xlabel(labels["x_label"],fontdict = {'fontsize' : 20})
         plt.ylabel(labels["y_label"],fontdict = {'fontsize' : 20})
         plt.title(labels["title"],fontdict = {'fontsize' : 30})
         plt.grid(False)
-        plt.tight_layout()
+        #plt.tight_layout()
+        #plt.margins(0.5,0.5)
 
 
 
@@ -143,17 +144,17 @@ def plot_3D(data,figname,zlim_min=40,zlim_max=120):
                         linewidth=0, antialiased=False, vmin=zlim_min,vmax=zlim_max)
     #ax.set_zlim(zlim_min, zlim_max)
     
-    ax.set_xticks(np.linspace(0,256,5),labels=np.round(np.linspace(0,255*0.785277,5)),size =10)
+    ax.set_xticks(np.linspace(0,256,5),labels=np.round(np.linspace(0,255*0.785277,5)),size =15)
     
         
-    ax.set_yticks(np.linspace(0,256,5),labels=np.round(np.linspace(-0.127552440715*127,0.127552440715*127,5),1),size =10)
-    ax.set_zlabel("Magnitude [dB]")
-    ax.set_ylabel("Velocity [knots]")
-    ax.set_xlabel("Range [m]")
+    ax.set_yticks(np.linspace(0,256,5),labels=np.round(np.linspace(-0.127552440715*127,0.127552440715*127,5),1),size =15)
+    
+    plt.xlabel(labels["x_label"],fontdict = {'fontsize' : 20})
+    plt.ylabel(labels["y_label"],fontdict = {'fontsize' : 20})
     ax.set_zlim(zlim_min,zlim_max+30)
     
     cbar = fig.colorbar(surf, ax=ax ,shrink=0.5, aspect=5)
-    cbar.set_label('Mangnitude [dB]',fontdict = {'fontsize' : 10})
+    cbar.set_label('Mangnitude [dB]',fontdict = {'fontsize' : 20})
     cbar.ax.tick_params(labelsize=10) 
     plt.savefig(f'plots/{figname}.svg',format="svg")
 
@@ -255,7 +256,7 @@ def CFAR_2D(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False,
         if(iso_axis):
             plt.yticks(np.linspace(0,256,9),labels=np.linspace(200,0,9))
         
-            plt.xticks(np.linspace(0,256,11),labels=np.round(np.linspace(-16.1987,16.1987,11),2))
+            plt.xticks(np.linspace(0,256,7),labels=np.round(np.linspace(-16.1987,16.1987,7),2))
         cbar  = plt.colorbar()
         cbar.set_label('Mangnitude [dB]',fontdict = {'fontsize' : 20})
         plt.xlabel(labels["x_label"],fontdict = {'fontsize' : 20})
