@@ -130,3 +130,9 @@ dmypy.json
 felttest1
 felttest2
 plots
+__pycache__/new_cfar
+all_SNR_plots
+new_cfar_plots
+cfar_io
+kmd2_det
+SNR_plots

@@ -12,6 +12,8 @@ from scipy import ndimage
 from PIL import Image, ImageFilter
 import cv2
 from operator import itemgetter
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 
 
 
@@ -63,7 +65,7 @@ def fft_and_plot(data, axis, fs=1,fft_size=256,plot=False,shift =False,dB=True, 
     #print(len(range(0,200,200/256)))
 
     if plot:
-        
+       
   
         plt.figure(figsize=(10,10))
         rotated_img = ndimage.rotate(data_fft,90) # We rotate the image so the x axis is the velocity
@@ -81,24 +83,29 @@ def fft_and_plot(data, axis, fs=1,fft_size=256,plot=False,shift =False,dB=True, 
       
         
            rotated_img = 20*np.log10(np.abs(rotated_img))
-       
+           max_val = np.max(rotated_img)
+           print(max_val)
+           rotated_img = rotated_img-max_val
 
         else:
             rotated_img = np.abs(rotated_img)  
-        plt.imshow(rotated_img,cmap="plasma", vmin=vmin,vmax=vmax)
-        
+        plt.imshow(rotated_img,cmap="plasma",vmin=vmin,vmax=vmax)
+        plt.xlabel(labels["x_label"],fontdict = {'fontsize' : 20})
+        plt.ylabel(labels["y_label"],fontdict = {'fontsize' : 20})
+        #plt.title(labels["title"],fontdict = {'fontsize' : 30})
+        plt.grid(False)
+        ax = plt.gca()
         
         plt.yticks(np.linspace(0,256,5),labels=np.round(np.linspace(255*0.785277,0,5)),size =20)
         plt.xticks(size =20)
         if(doppler):
             plt.xticks(np.linspace(0,256,7),labels=np.round(np.linspace(-0.127552440715*127,0.127552440715*127,7),2),size =20)
-        cbar  = plt.colorbar()
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.1)
+        cbar  = plt.colorbar(cax=cax)
         cbar.set_label('Mangnitude [dB]',fontdict = {'fontsize' : 20})
         cbar.ax.tick_params(labelsize=15) 
-        plt.xlabel(labels["x_label"],fontdict = {'fontsize' : 20})
-        plt.ylabel(labels["y_label"],fontdict = {'fontsize' : 20})
-        plt.title(labels["title"],fontdict = {'fontsize' : 30})
-        plt.grid(False)
+        
         #plt.tight_layout()
         #plt.margins(0.5,0.5)
 
@@ -217,10 +224,10 @@ def CFAR_2D(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False,
     
     data_cfar = np.pad(data, window_size, mode='edge')
     
-
+    SNR = np.zeros(data.shape)
+    SNR_detections = np.zeros(data.shape)
     window_area = (2*window_size+1)**2
     training_area = window_area - (2*window_size+1-2*training_cells)**2
-    print("traning area",training_area)
     a = alpha(training_area, PFA)
     detections = []
 
@@ -230,9 +237,12 @@ def CFAR_2D(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False,
             threshold = estimated_teshold(a,P_training)
             treshold_map[i,j] = threshold
             
-            if(np.abs(data[i,j]) < threshold):
+            SNR[i,j] = np.abs(data[i,j])/np.abs(threshold)
+             
+            if((np.abs(data[i,j])) < threshold):
                 data[i,j] = 1
             else:
+                SNR_detections[i,j] = np.abs(data[i,j])/np.abs(threshold)
                 idx_peaks.append([i,j])
                 detections.append({
                     "cords":(i,j),
@@ -241,6 +251,7 @@ def CFAR_2D(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False,
                     "SNR":10*np.log10(np.abs(data[i,j])/np.abs(P_training))
                     }
                  )
+                #SNR_detections[i,j] = np.abs(data[i,j])/np.abs(threshold)
                 
     
     if(plot):
@@ -266,52 +277,10 @@ def CFAR_2D(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False,
             plt.savefig(f'plots/{filename}.svg',format="svg")
         plt.show()
 
-        #3dplot
-        # plt.figure(figsize=(60,60))
-        # data_abs = 20*np.log10(np.abs(data))
-        #     #data_abs = np.delete(data_abs,0,axis=1)
-
-        # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-            
-            
-
-
-        #     # Make data.
-        # X = np.arange(0, 256, 1)
-        # Y = np.arange(0, 256, 1)
-        # X, Y = np.meshgrid(X, Y)
-        # #ata_abs[data_abs<zlim_min]= np.nan
-        
-            
-
-        #     # Plot the surface.
-        # surf = ax.plot_surface(X, Y, data_abs, cmap=cm.coolwarm,
-        #                         linewidth=0, antialiased=False)
-        #     #ax.set_zlim(zlim_min, zlim_max)
-            
-        # ax.set_xticks(np.linspace(0,256,5),labels=np.round(np.linspace(0,255*0.785277,5)),size =10)
-            
-                
-        # ax.set_yticks(np.linspace(0,256,5),labels=np.round(np.linspace(-0.127552440715*127,0.127552440715*127,5),1),size =10)
-        # ax.set_zlabel("Magnitude [dB]")
-        # ax.set_ylabel("Velocity [knots]")
-        # ax.set_xlabel("Range [m]")
-        # #ax.set_zlim(zlim_min,zlim_max+30)
-            
-        # cbar = fig.colorbar(surf, ax=ax ,shrink=0.5, aspect=5)
-        # cbar.set_label('Mangnitude [dB]',fontdict = {'fontsize' : 10})
-        # cbar.ax.tick_params(labelsize=10) 
-        # if saveFig:
-        #     plt.savefig(f'plots/{filename}_3D.svg',format="svg")
-        
-
-
-        # #plt.show()
-    
     
     
             
-    return data, detections, treshold_map
+    return data, SNR_detections, SNR,detections
 
 
 def radar_detection_algorithem(data_I,data_Q,fs=1,highcut=0.1,order=5,fft_size=256,guard_cells=5,training_cells=15,PFA=0.0001,plot=False):
@@ -363,3 +332,58 @@ def radar_detection_algorithem(data_I,data_Q,fs=1,highcut=0.1,order=5,fft_size=2
         plt.grid(False)
 
     return cfar, idx_peaks, treshold_map
+
+
+
+
+def CFAR_IO(data, guard_cells, training_cells, PFA,plot = False,iso_axis =False,saveFig=False,filename =""):
+    """_summary_
+
+    Args:
+        data (_type_): _description_
+        guard_cells (_type_): _description_
+        training_cells (_type_): _description_
+        threshold (_type_): _description_
+    """
+    idx_peaks = []
+    treshold_map = np.zeros(data.shape)
+
+    window_size = guard_cells + training_cells
+    data = ndimage.rotate(data, 90)
+    
+    data_cfar = np.pad(data, window_size, mode='edge')
+    
+
+    window_area = (2*window_size+1)**2
+    training_area = window_area - (2*window_size+1-2*training_cells)**2
+    print("traning area",training_area)
+    a = alpha(training_area, PFA)
+    detections = []
+
+    for i in range(256):
+        for j in range(256):
+            P_training = window_estimator(data_cfar[i:i+2*window_size+1,j:j+2*window_size+1],training_cells ,training_area)
+            threshold = estimated_teshold(a,P_training)
+            treshold_map[i,j] = threshold
+            
+            if(np.abs(data[i,j]) < threshold):
+                data[i,j] = 0
+            else:
+                data[i,j] = 1
+
+                idx_peaks.append([i,j])
+                detections.append({
+                    "cords":(i,j),
+                    "peak":np.abs(data[i,j]),
+                    "noise_est":np.abs(P_training),
+                    "SNR":10*np.log10(np.abs(data[i,j])/np.abs(P_training))
+                    }
+                 )
+                
+    
+    
+    
+    
+    
+            
+    return data, detections, treshold_map
